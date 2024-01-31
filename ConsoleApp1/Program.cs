@@ -1,11 +1,5 @@
-﻿using ConsoleApp1;
-using OpenQA.Selenium;
+﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.Support.UI;
-using OpenQA.Selenium.Remote;   
-using WebDriverManager;
-using System;
-using System.IO;
 
 internal class Program
 {
@@ -121,8 +115,8 @@ internal class Program
 
 
             // Start a new task for each browser
-           Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
-           tasks.Add(task);
+          // Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
+           //tasks.Add(task);
 
         }
 
