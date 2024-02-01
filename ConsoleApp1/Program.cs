@@ -1,5 +1,6 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using System.Text;
 
 internal class Program
 {
@@ -7,6 +8,19 @@ internal class Program
     {
         // Create a list to store tasks 
         List<Task> tasks = new List<Task>();
+        ChromeOptions options = new ChromeOptions();
+       
+
+        string proxyIp = "207.244.217.103";
+        int proxyPort = 6650;
+        string proxyUsername = "krgxesqj";
+        string proxyPassword = "vz4vg9m6jxkn";
+
+        // Encode username and password in Base64
+        //string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{proxyUsername}:{proxyPassword}"));
+
+        //options.AddArgument($"--proxy=http://{proxyUsername}:{proxyPassword}@{proxyIp}:{proxyPort}");
+        
 
 
         // Get the current directory
@@ -45,7 +59,7 @@ internal class Program
         for (int i = 0; i < numberOfUsers; i++)
         {
 
-            IWebDriver driver = new ChromeDriver();
+            IWebDriver driver = new ChromeDriver(options);
 
 
 
