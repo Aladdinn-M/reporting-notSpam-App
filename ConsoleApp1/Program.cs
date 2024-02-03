@@ -1,6 +1,10 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using System.Net;
 using System.Text;
+using System.Diagnostics;
+
+
 
 internal class Program
 {
@@ -8,19 +12,29 @@ internal class Program
     {
         // Create a list to store tasks 
         List<Task> tasks = new List<Task>();
-        ChromeOptions options = new ChromeOptions();
-       
+     
+
 
         string proxyIp = "207.244.217.103";
         int proxyPort = 6650;
-        string proxyUsername = "krgxesqj";
-        string proxyPassword = "vz4vg9m6jxkn";
-
-        // Encode username and password in Base64
-        //string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{proxyUsername}:{proxyPassword}"));
-
-        //options.AddArgument($"--proxy=http://{proxyUsername}:{proxyPassword}@{proxyIp}:{proxyPort}");
         
+
+
+        Proxy proxy = new Proxy();
+        proxy.HttpProxy = $"{proxyIp}:{proxyPort}";
+        proxy.SslProxy = $"{proxyIp}:{proxyPort}";
+
+        ChromeOptions options = new ChromeOptions();
+        options.Proxy = proxy ;
+
+        //Encode username and password in Base64
+        //string Username = Convert.ToBase64String(Encoding.ASCII.GetBytes(proxyUsername));
+       // string Password = Convert.ToBase64String(Encoding.ASCII.GetBytes(proxyPassword));
+       // options.AddArgument($"--proxy-server=http://{proxyIp}:{proxyPort}");
+
+
+     
+
 
 
         // Get the current directory
@@ -53,40 +67,46 @@ internal class Program
 
 
         Console.WriteLine("Enter Number of Users :");
-        int numberOfUsers =int.Parse(Console.ReadLine());
+        int numberOfUsers = int.Parse(Console.ReadLine());
 
 
         for (int i = 0; i < numberOfUsers; i++)
         {
 
             IWebDriver driver = new ChromeDriver(options);
+           
 
-
+            
 
             // Set implicit wait
             driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
+            
+
+            
 
             try
             {
                 string url;
-                url = "https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=19&ct=1705352608&rver=7.0.6738.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fcobrandid%3dab0455a0-8d03-46b9-b18b-df2f57b9e44c%26nlp%3d1%26deeplink%3dowa%252f%26RpsCsrfState%3d451c2c6d-8d13-204d-9273-6fe70ef13cf9&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=ab0455a0-8d03-46b9-b18b-df2f57b9e44c";
+                url = "https://username:password@login.live.com/login.srf?wa=wsignin1.0&rpsnv=19&ct=1705352608&rver=7.0.6738.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fcobrandid%3dab0455a0-8d03-46b9-b18b-df2f57b9e44c%26nlp%3d1%26deeplink%3dowa%252f%26RpsCsrfState%3d451c2c6d-8d13-204d-9273-6fe70ef13cf9&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=ab0455a0-8d03-46b9-b18b-df2f57b9e44c";
                 driver.Manage().Window.Maximize();
                 driver.Navigate().GoToUrl(url);
+                string autoITScriptPath = @"ProxyAuth.exe";
+                Process.Start(autoITScriptPath);
             }
-            catch (Exception) { Console.WriteLine("--------------error in openning browser!!");  }
-        
+            catch (Exception) { Console.WriteLine("--------------error in openning browser!!"); }
 
-   
+
+
             try
             {
 
                 IWebElement loginInput = driver.FindElement(By.CssSelector("[name=\"loginfmt\"]"));
-                loginInput.SendKeys(extractfile(0,driver,i, filePath));          // zero means email parts[0] in the file;
+                loginInput.SendKeys(extractfile(0, driver, i, filePath));          // zero means email parts[0] in the file;
                 loginInput.SendKeys(Keys.Enter);
                 Thread.Sleep(2000);
 
                 IWebElement passInput = driver.FindElement(By.CssSelector("[name=\"passwd\"]"));
-                passInput.SendKeys(extractfile(1,driver,i, filePath));          //one means paasword parts[1] in the file ;
+                passInput.SendKeys(extractfile(1, driver, i, filePath));          //one means paasword parts[1] in the file ;
                 passInput.SendKeys(Keys.Enter);
                 Thread.Sleep(2000);
             }
@@ -117,7 +137,7 @@ internal class Program
                 driver.Navigate().GoToUrl(urlspam);
 
                 // Create a local copy of the index to capture in the lambda expression
-                
+
             }
             catch (Exception)
             {
@@ -129,21 +149,21 @@ internal class Program
 
 
             // Start a new task for each browser
-          // Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
-           //tasks.Add(task);
+            // Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
+            //tasks.Add(task);
 
         }
 
 
-            // Wait for all tasks to complete or until cancellation
-            await Task.WhenAny(Task.WhenAll(tasks), Task.Delay(TimeSpan.FromMinutes(10))); // Adjust the timeout as needed
+        // Wait for all tasks to complete or until cancellation
+        await Task.WhenAny(Task.WhenAll(tasks), Task.Delay(TimeSpan.FromMinutes(10))); // Adjust the timeout as needed
 
-      
 
-            // Wait for all tasks to complete
-            await Task.WhenAll(tasks);
-            Task.WaitAll(tasks.ToArray());
-    
+
+        // Wait for all tasks to complete
+        await Task.WhenAll(tasks);
+        Task.WaitAll(tasks.ToArray());
+
 
 
 
@@ -185,27 +205,27 @@ internal class Program
                     Thread.Sleep(5000);
 
                     Console.WriteLine($"=======================Task {index}: Loop iteration");
-               
+
 
                 } while (true);
             }
             catch (Exception)
-           {
+            {
                 // Task was canceled, clean up if needed
-               Console.WriteLine($"-------------Task {index}: Task was canceled.");driver.Quit();
+                Console.WriteLine($"-------------Task {index}: Task was canceled."); driver.Quit();
             }
-         
+
         }
 
 
 
 
 
-        string extractfile(int zeroOrOne, IWebDriver driver, int index,string filePath)
+        string extractfile(int zeroOrOne, IWebDriver driver, int index, string filePath)
         {
-           
 
-            
+
+
             string email = null;
             try
             {
