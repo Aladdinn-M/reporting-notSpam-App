@@ -27,15 +27,7 @@ internal class Program
         ChromeOptions options = new ChromeOptions();
         options.Proxy = proxy ;
 
-        //Encode username and password in Base64
-        //string Username = Convert.ToBase64String(Encoding.ASCII.GetBytes(proxyUsername));
-       // string Password = Convert.ToBase64String(Encoding.ASCII.GetBytes(proxyPassword));
-       // options.AddArgument($"--proxy-server=http://{proxyIp}:{proxyPort}");
-
-
      
-
-
 
         // Get the current directory
         string currentDirectory = Directory.GetCurrentDirectory();
