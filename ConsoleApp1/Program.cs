@@ -165,10 +165,8 @@ internal class Program
 
             try
             {
-              //  string urlspam = "https://outlook.live.com/mail/0/junkemail";
-               // driver.Navigate().GoToUrl(urlspam);
-
-               
+                 string urlspam = "https://outlook.live.com/mail/0/junkemail";
+                 driver.Navigate().GoToUrl(urlspam);
 
             }
             catch (Exception)
@@ -181,8 +179,8 @@ internal class Program
 
 
             // Start a new task for each browser
-            // Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
-            //tasks.Add(task);
+            Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
+            tasks.Add(task);
 
         }
 
