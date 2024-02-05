@@ -3,6 +3,7 @@ using OpenQA.Selenium.Chrome;
 using System.Net;
 using System.Text;
 using System.Diagnostics;
+using OpenQA.Selenium.Interactions;
 
 
 
@@ -12,44 +13,65 @@ internal class Program
     {
         // Create a list to store tasks 
         List<Task> tasks = new List<Task>();
-     
 
-
-        string proxyIp = "207.244.217.103";
-        int proxyPort = 6650;
+       
+          
         
-
-
-        Proxy proxy = new Proxy();
-        proxy.HttpProxy = $"{proxyIp}:{proxyPort}";
-        proxy.SslProxy = $"{proxyIp}:{proxyPort}";
-
-        ChromeOptions options = new ChromeOptions();
-        options.Proxy = proxy ;
-
-     
 
         // Get the current directory
         string currentDirectory = Directory.GetCurrentDirectory();
 
-        // Combine the current directory with the file name
-        string filePath = Path.Combine(currentDirectory, "emails.txt");
+
+        // Combine the current directory with the proxy file name
+        string proxiesFilePath = Path.Combine(currentDirectory, "proxies.txt");
 
         try
         {
             // Check if the file already exists
-            if (File.Exists(filePath))
+            if (File.Exists(proxiesFilePath))
             {
-                Console.WriteLine($"File 'emails.txt' already exists in the following path:");
-                Console.WriteLine(filePath);
+                Console.WriteLine($"File 'proxies.txt' already exists in the following path:");
+                Console.WriteLine(proxiesFilePath);
             }
             else
             {
                 // Create the file if it doesn't exist
-                File.Create(filePath);
+                File.Create(proxiesFilePath);
+
+                Console.WriteLine($"File 'proxies.txt' created successfully in the following path:");
+                Console.WriteLine(proxiesFilePath);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred: {ex.Message}");
+        }
+
+
+
+
+       
+
+
+
+        // Combine the current directory with the emails file name
+        string emailFilePath = Path.Combine(currentDirectory, "emails.txt");
+
+        try
+        {
+            // Check if the file already exists
+            if (File.Exists(emailFilePath))
+            {
+                Console.WriteLine($"File 'emails.txt' already exists in the following path:");
+                Console.WriteLine(emailFilePath);
+            }
+            else
+            {
+                // Create the file if it doesn't exist
+                File.Create(emailFilePath);
 
                 Console.WriteLine($"File 'emails.txt' created successfully in the following path:");
-                Console.WriteLine(filePath);
+                Console.WriteLine(emailFilePath);
             }
         }
         catch (Exception ex)
@@ -62,13 +84,29 @@ internal class Program
         int numberOfUsers = int.Parse(Console.ReadLine());
 
 
-        for (int i = 0; i < numberOfUsers; i++)
-        {
-
-            IWebDriver driver = new ChromeDriver(options);
            
 
+
+        for (int i = 0; i < numberOfUsers; i++)
+        {
+            Proxy proxy = new Proxy();
+
+            string proxyIp = extractfile(0, 0, proxiesFilePath);
+            int proxyPort = int.Parse(extractfile(1, 0, proxiesFilePath));
+            string ipAndPort = $"{proxyIp}:{proxyPort}";
+            proxy.HttpProxy = ipAndPort;
+            proxy.SslProxy = ipAndPort;
+
+            ChromeOptions options = new ChromeOptions();
+
+            options.Proxy = proxy;
+
+            IWebDriver driver = new ChromeDriver(options);
+      
             
+
+
+
 
             // Set implicit wait
             driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
@@ -84,6 +122,7 @@ internal class Program
                 driver.Navigate().GoToUrl(url);
                 string autoITScriptPath = @"ProxyAuth.exe";
                 Process.Start(autoITScriptPath);
+
             }
             catch (Exception) { Console.WriteLine("--------------error in openning browser!!"); }
 
@@ -93,12 +132,12 @@ internal class Program
             {
 
                 IWebElement loginInput = driver.FindElement(By.CssSelector("[name=\"loginfmt\"]"));
-                loginInput.SendKeys(extractfile(0, driver, i, filePath));          // zero means email parts[0] in the file;
+                loginInput.SendKeys(extractfile(0, i, emailFilePath, driver));          // zero means email parts[0] in the file;
                 loginInput.SendKeys(Keys.Enter);
                 Thread.Sleep(2000);
 
                 IWebElement passInput = driver.FindElement(By.CssSelector("[name=\"passwd\"]"));
-                passInput.SendKeys(extractfile(1, driver, i, filePath));          //one means paasword parts[1] in the file ;
+                passInput.SendKeys(extractfile(1, i, emailFilePath, driver));          //one means paasword parts[1] in the file ;
                 passInput.SendKeys(Keys.Enter);
                 Thread.Sleep(2000);
             }
@@ -119,21 +158,22 @@ internal class Program
                 }
 
             }
-            catch (Exception) { Console.WriteLine("--------------error in access to inbox "); driver.Quit(); }
+            catch (Exception) { Console.WriteLine("--------------error in access to inbox "); //driver.Quit(); 
+            }
 
 
 
             try
             {
-                string urlspam = "https://outlook.live.com/mail/0/junkemail";
-                driver.Navigate().GoToUrl(urlspam);
+              //  string urlspam = "https://outlook.live.com/mail/0/junkemail";
+               // driver.Navigate().GoToUrl(urlspam);
 
-                // Create a local copy of the index to capture in the lambda expression
+               
 
             }
             catch (Exception)
             {
-                Console.WriteLine("--------------error in access to spam "); driver.Quit();
+                Console.WriteLine("--------------error in access to spam "); //driver.Quit();
 
             }
 
@@ -213,12 +253,12 @@ internal class Program
 
 
 
-        string extractfile(int zeroOrOne, IWebDriver driver, int index, string filePath)
+        string extractfile(int zeroOrOne, int index , string filePath,IWebDriver driver=null )
         {
 
 
 
-            string email = null;
+            string result = null;
             try
             {
                 // Read all lines from the file
@@ -231,11 +271,11 @@ internal class Program
                     string[] parts = lines[index].Split(':');
 
                     // Check if there are two parts
-                    if (parts.Length == 2)
+                    if (parts.Length >1 )
                     {
 
                         // Extract the first part (text1)
-                        email = parts[zeroOrOne];
+                        result = parts[zeroOrOne];
 
                     }
                     else
@@ -252,7 +292,7 @@ internal class Program
             {
                 Console.WriteLine("--------------An error occurred: " + ex.Message); driver.Quit();
             }
-            return email;
+            return result;
         }
     }
 }
