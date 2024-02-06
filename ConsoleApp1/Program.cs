@@ -14,69 +14,19 @@ internal class Program
         // Create a list to store tasks 
         List<Task> tasks = new List<Task>();
 
-       
-         
+
+
 
         // Get the current directory
         string currentDirectory = Directory.GetCurrentDirectory();
 
-
-        // Combine the current directory with the proxy file name
+        // Proxy file
         string proxiesFilePath = Path.Combine(currentDirectory, "proxies.txt");
+        CreateFileIfNotExists(proxiesFilePath);
 
-        try
-        {
-            // Check if the file already exists
-            if (File.Exists(proxiesFilePath))
-            {
-                Console.WriteLine($"File 'proxies.txt' already exists in the following path:");
-                Console.WriteLine(proxiesFilePath);
-            }
-            else
-            {
-                // Create the file if it doesn't exist
-                File.Create(proxiesFilePath);
-
-                Console.WriteLine($"File 'proxies.txt' created successfully in the following path:");
-                Console.WriteLine(proxiesFilePath);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"An error occurred: {ex.Message}");
-        }
-
-
-
-
-       
-
-
-
-        // Combine the current directory with the emails file name
+        // Emails file
         string emailFilePath = Path.Combine(currentDirectory, "emails.txt");
-
-        try
-        {
-            // Check if the file already exists
-            if (File.Exists(emailFilePath))
-            {
-                Console.WriteLine($"File 'emails.txt' already exists in the following path:");
-                Console.WriteLine(emailFilePath);
-            }
-            else
-            {
-                // Create the file if it doesn't exist
-                File.Create(emailFilePath);
-
-                Console.WriteLine($"File 'emails.txt' created successfully in the following path:");
-                Console.WriteLine(emailFilePath);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"An error occurred: {ex.Message}");
-        }
+        CreateFileIfNotExists(emailFilePath);
 
 
         Console.WriteLine("Enter Number of Users :");
@@ -143,7 +93,8 @@ internal class Program
             {
 
                 IWebElement loginInput = driver.FindElement(By.CssSelector("[name=\"loginfmt\"]"));
-                loginInput.SendKeys(extractfile(0, i, emailFilePath, driver));          // zero means email parts[0] in the file;
+                string email = extractfile(0, i, emailFilePath, driver);
+                loginInput.SendKeys(email);                                            // zero means email parts[0] in the file;
                 loginInput.SendKeys(Keys.Enter);
                 Thread.Sleep(2000);
 
@@ -187,7 +138,7 @@ internal class Program
             }
 
             int index = i;
-
+            
 
             // Start a new task for each browser
             Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
@@ -258,7 +209,30 @@ internal class Program
 
         }
 
+        void CreateFileIfNotExists(string filePath)
+        {
+            try
+            {
+                // Check if the file already exists
+                if (File.Exists(filePath))
+                {
+                    Console.WriteLine($"File '{Path.GetFileName(filePath)}' already exists in the following path:");
+                    Console.WriteLine(filePath);
+                }
+                else
+                {
+                    // Create the file if it doesn't exist
+                    using (File.Create(filePath)) { }
 
+                    Console.WriteLine($"File '{Path.GetFileName(filePath)}' created successfully in the following path:");
+                    Console.WriteLine(filePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+            }
+        }
 
 
 
