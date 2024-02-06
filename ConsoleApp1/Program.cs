@@ -15,8 +15,7 @@ internal class Program
         List<Task> tasks = new List<Task>();
 
        
-          
-        
+         
 
         // Get the current directory
         string currentDirectory = Directory.GetCurrentDirectory();
@@ -89,17 +88,29 @@ internal class Program
 
         for (int i = 0; i < numberOfUsers; i++)
         {
+            ChromeOptions options = new ChromeOptions();
             Proxy proxy = new Proxy();
 
-            string proxyIp = extractfile(0, 0, proxiesFilePath);
-            int proxyPort = int.Parse(extractfile(1, 0, proxiesFilePath));
-            string ipAndPort = $"{proxyIp}:{proxyPort}";
-            proxy.HttpProxy = ipAndPort;
-            proxy.SslProxy = ipAndPort;
 
-            ChromeOptions options = new ChromeOptions();
+            try 
+            {
+                string proxyIp = extractfile(0, 0, proxiesFilePath);
+                int proxyPort = int.Parse(extractfile(1, 0, proxiesFilePath));
+                string ipAndPort = $"{proxyIp}:{proxyPort}";
+                proxy.HttpProxy = ipAndPort;
+                proxy.SslProxy = ipAndPort;
 
-            options.Proxy = proxy;
+            
+                options.Proxy = proxy;
+
+            }
+            catch 
+            {
+                Console.WriteLine("--------------error in Proxies  (browser without proxy) !!");
+            }
+            
+
+            
 
             IWebDriver driver = new ChromeDriver(options);
       
@@ -158,7 +169,7 @@ internal class Program
                 }
 
             }
-            catch (Exception) { Console.WriteLine("--------------error in access to inbox "); //driver.Quit(); 
+            catch (Exception) { Console.WriteLine("--------------error in access to inbox "); driver.Quit(); 
             }
 
 
@@ -171,7 +182,7 @@ internal class Program
             }
             catch (Exception)
             {
-                Console.WriteLine("--------------error in access to spam "); //driver.Quit();
+                Console.WriteLine("--------------error in access to spam "); driver.Quit();
 
             }
 
@@ -278,17 +289,17 @@ internal class Program
                     }
                     else
                     {
-                        Console.WriteLine("--------------Invalid format in the file. Each line should be in the format 'text1:text2'."); driver.Quit();
+                        Console.WriteLine("--------------Invalid format in the file. Each line should be in the format 'text1:text2'."); if (driver!= null) driver.Quit();
                     }
                 }
                 else
                 {
-                    Console.WriteLine("--------------The file is empty."); driver.Quit();
+                    Console.WriteLine($"--------------The file is empty  {filePath}"); if (driver != null) driver.Quit(); ;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("--------------An error occurred: " + ex.Message); driver.Quit();
+                Console.WriteLine("--------------An error occurred: " + ex.Message); if (driver != null) driver.Quit(); ;
             }
             return result;
         }
