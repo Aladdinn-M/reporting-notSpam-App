@@ -135,8 +135,10 @@ internal class Program
 
 
             // Start a new task for each browser
-            Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
+           Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
            tasks.Add(task);
+
+            Console.ReadKey();
 
         }
 
@@ -152,12 +154,12 @@ internal class Program
 
 
 
+    }
 
 
 
 
-
-        static void ExecuteInfiniteLoop(IWebDriver driver, int index)
+    static void ExecuteInfiniteLoop(IWebDriver driver, int index)
         {
 
             try
@@ -175,6 +177,24 @@ internal class Program
                     Thread.Sleep(5000);
 
 
+                    driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(60);
+
+                    IWebElement domainLinkClick = driver.FindElement(By.Id("x_buttonclickon"));                
+                    domainLinkClick.Click();
+
+
+                    string originalTab = driver.CurrentWindowHandle;
+                    string newTab = driver.WindowHandles[^1]; // Get the latest window handle
+
+                    driver.SwitchTo().Window(newTab);
+                    Thread.Sleep(3000);
+
+
+                    // Close the new tab 
+                    driver.Close();
+
+                    // Switch back to the original tab 
+                    driver.SwitchTo().Window(originalTab);
 
 
                     IWebElement moveToButton = driver.FindElement(By.Id("505"));
@@ -195,7 +215,9 @@ internal class Program
 
         }
 
-        void CreateFileIfNotExists(string filePath)
+    
+
+        public static void CreateFileIfNotExists(string filePath)
         {
             try
             {
@@ -222,7 +244,7 @@ internal class Program
 
 
 
-        string extractfile(int zeroOrOne, int index, string filePath, IWebDriver driver = null)
+        public static string extractfile(int zeroOrOne, int index, string filePath, IWebDriver driver = null)
         {
 
 
@@ -263,5 +285,5 @@ internal class Program
             }
             return result;
         }
-    }
+    
 }
