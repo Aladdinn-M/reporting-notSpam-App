@@ -33,7 +33,7 @@ internal class Program
         int numberOfUsers = int.Parse(Console.ReadLine());
 
 
-           
+
 
 
         for (int i = 0; i < numberOfUsers; i++)
@@ -42,7 +42,7 @@ internal class Program
             Proxy proxy = new Proxy();
 
 
-            try 
+            try
             {
                 string proxyIp = extractfile(0, 0, proxiesFilePath);
                 int proxyPort = int.Parse(extractfile(1, 0, proxiesFilePath));
@@ -50,30 +50,30 @@ internal class Program
                 proxy.HttpProxy = ipAndPort;
                 proxy.SslProxy = ipAndPort;
 
-            
+
                 options.Proxy = proxy;
 
             }
-            catch 
+            catch
             {
                 Console.WriteLine("--------------error in Proxies  (browser without proxy) !!");
             }
-            
 
-            
+
+
 
             IWebDriver driver = new ChromeDriver(options);
-      
-            
+
+
 
 
 
 
             // Set implicit wait
             driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
-            
 
-            
+
+
 
             try
             {
@@ -120,7 +120,7 @@ internal class Program
                 }
 
             }
-            catch (Exception) { Console.WriteLine("--------------error in access to inbox "); driver.Quit(); 
+            catch (Exception) { Console.WriteLine("--------------error in access to inbox "); driver.Quit();
             }
 
 
@@ -130,7 +130,7 @@ internal class Program
                 Thread.Sleep(5000);
 
                 string urlspam = "https://outlook.live.com/mail/0/junkemail";
-                 driver.Navigate().GoToUrl(urlspam);
+                driver.Navigate().GoToUrl(urlspam);
 
             }
             catch (Exception)
@@ -140,11 +140,11 @@ internal class Program
             }
 
             int index = i;
-            
+
 
             // Start a new task for each browser
-            //Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
-            //tasks.Add(task);
+            Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
+            tasks.Add(task);
 
         }
 
@@ -158,88 +158,90 @@ internal class Program
         await Task.WhenAll(tasks);
         Task.WaitAll(tasks.ToArray());
 
+        Console.ReadKey();
+    }
 
 
 
 
 
+    public static void ExecuteInfiniteLoop(IWebDriver driver, int index)
+    {
 
-
-        static void ExecuteInfiniteLoop(IWebDriver driver, int index)
+        try
         {
-
-            try
+            do
             {
-                do
-                {
-                    string urlspam = "https://outlook.live.com/mail/0/junkemail";
-                    driver.Navigate().GoToUrl(urlspam);
+                string urlspam = "https://outlook.live.com/mail/0/junkemail";
+                driver.Navigate().GoToUrl(urlspam);
 
-                    Thread.Sleep(5000);
+                Thread.Sleep(5000);
 
 
-                    IWebElement firstSpam = driver.FindElement(By.Id("MainModule"));
-                    firstSpam = firstSpam.FindElement(By.ClassName("S2NDX"));
-                    firstSpam.Click();
-                    Thread.Sleep(5000);
+                IWebElement firstSpam = driver.FindElement(By.Id("MainModule"));
+                firstSpam = firstSpam.FindElement(By.ClassName("S2NDX"));
+                firstSpam.Click();
+                Thread.Sleep(5000);
 
 
-                    IWebElement moveToButton = driver.FindElement(By.Id("540"));
-                    moveToButton.Click();
-                    Thread.Sleep(5000);
+                IWebElement moveToButton = driver.FindElement(By.Id("540"));
+                moveToButton.Click();
+                Thread.Sleep(5000);
 
-                    IWebElement inboxButton = driver.FindElement(By.Name("Inbox"));
-                    inboxButton.Click();
-                    Thread.Sleep(5000);
-                    IWebElement confirmButton = driver.FindElement(By.Id("ok-1"));
-                    confirmButton.Click();
+                IWebElement inboxButton = driver.FindElement(By.Name("Inbox"));
+                inboxButton.Click();
+                Thread.Sleep(5000);
+                IWebElement confirmButton = driver.FindElement(By.Id("ok-1"));
+                confirmButton.Click();
 
 
 
-                    Thread.Sleep(5000);
+                Thread.Sleep(5000);
 
-                    Console.WriteLine($"=======================Task {index}: Loop iteration");
+                Console.WriteLine($"=======================Task {index}: Loop iteration");
 
 
-                } while (true);
-            }
-            catch (Exception)
-            {
-                // Task was canceled, clean up if needed
-                Console.WriteLine($"-------------Task {index}: Task was canceled."); driver.Quit();
-            }
-
+            } while (true);
+        }
+        catch (Exception)
+        {
+            // Task was canceled, clean up if needed
+            Console.WriteLine($"-------------Task {index}: Task was canceled."); driver.Quit();
         }
 
-        void CreateFileIfNotExists(string filePath)
-        {
-            try
-            {
-                // Check if the file already exists
-                if (File.Exists(filePath))
-                {
-                    Console.WriteLine($"File '{Path.GetFileName(filePath)}' already exists in the following path:");
-                    Console.WriteLine(filePath);
-                }
-                else
-                {
-                    // Create the file if it doesn't exist
-                    using (File.Create(filePath)) { }
+    }
 
-                    Console.WriteLine($"File '{Path.GetFileName(filePath)}' created successfully in the following path:");
-                    Console.WriteLine(filePath);
-                }
-            }
-            catch (Exception ex)
+
+
+    public static void CreateFileIfNotExists(string filePath)
+    {
+        try
+        {
+            // Check if the file already exists
+            if (File.Exists(filePath))
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
+                Console.WriteLine($"File '{Path.GetFileName(filePath)}' already exists in the following path:");
+                Console.WriteLine(filePath);
+            }
+            else
+            {
+                // Create the file if it doesn't exist
+                using (File.Create(filePath)) { }
+
+                Console.WriteLine($"File '{Path.GetFileName(filePath)}' created successfully in the following path:");
+                Console.WriteLine(filePath);
             }
         }
-
-
-
-        string extractfile(int zeroOrOne, int index , string filePath,IWebDriver driver=null )
+        catch (Exception ex)
         {
+            Console.WriteLine($"An error occurred: {ex.Message}");
+        }
+    }
+
+
+
+        public static string extractfile(int zeroOrOne, int index, string filePath, IWebDriver driver = null)
+        { 
 
 
 
@@ -279,5 +281,5 @@ internal class Program
             }
             return result;
         }
-    }
+    
 }
