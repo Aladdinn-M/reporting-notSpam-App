@@ -138,7 +138,7 @@ internal class Program
            Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
            tasks.Add(task);
 
-            Console.ReadKey();
+            
 
         }
 
@@ -153,7 +153,7 @@ internal class Program
         Task.WaitAll(tasks.ToArray());
 
 
-
+        Console.ReadKey();
     }
 
 
