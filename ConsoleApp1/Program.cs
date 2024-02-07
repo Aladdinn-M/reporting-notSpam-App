@@ -1,10 +1,11 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.Support.UI;
-using OpenQA.Selenium.Remote;   
-using WebDriverManager;
-using System;
-using System.IO;
+using System.Net;
+using System.Text;
+using System.Diagnostics;
+using OpenQA.Selenium.Interactions;
+
+
 
 internal class Program
 {
@@ -14,74 +15,97 @@ internal class Program
         List<Task> tasks = new List<Task>();
 
 
+
+
         // Get the current directory
         string currentDirectory = Directory.GetCurrentDirectory();
 
-        // Combine the current directory with the file name
-        string filePath = Path.Combine(currentDirectory, "emails.txt");
+        // Proxy file
+        string proxiesFilePath = Path.Combine(currentDirectory, "proxies.txt");
+        CreateFileIfNotExists(proxiesFilePath);
 
-        try
-        {
-            // Check if the file already exists
-            if (File.Exists(filePath))
-            {
-                Console.WriteLine($"File 'emails.txt' already exists in the following path:");
-                Console.WriteLine(filePath);
-            }
-            else
-            {
-                // Create the file if it doesn't exist
-                File.Create(filePath);
-
-                Console.WriteLine($"File 'emails.txt' created successfully in the following path:");
-                Console.WriteLine(filePath);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"An error occurred: {ex.Message}");
-        }
+        // Emails file
+        string emailFilePath = Path.Combine(currentDirectory, "emails.txt");
+        CreateFileIfNotExists(emailFilePath);
 
 
         Console.WriteLine("Enter Number of Users :");
-        int numberOfUsers =int.Parse(Console.ReadLine());
+        int numberOfUsers = int.Parse(Console.ReadLine());
+
+
+
 
 
         for (int i = 0; i < numberOfUsers; i++)
         {
 
-            IWebDriver driver = new ChromeDriver();
+             
+
+            ChromeOptions options = new ChromeOptions();
+            Proxy proxy = new Proxy();
+
+
+            try
+            {
+                string proxyIp = extractfile(0, 0, proxiesFilePath);
+                int proxyPort = int.Parse(extractfile(1, 0, proxiesFilePath));
+                string ipAndPort = $"{proxyIp}:{proxyPort}";
+                proxy.HttpProxy = ipAndPort;
+                proxy.SslProxy = ipAndPort;
+
+
+                options.Proxy = proxy;
+            }
+            catch
+            {
+                Console.WriteLine("--------------error in Proxies  (browser without proxy) !!");
+            }
+
+
+
+
+            IWebDriver driver = new ChromeDriver(options);
+
+
+
 
 
 
             // Set implicit wait
             driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
 
+
+
+
             try
             {
                 string url;
-                url = "https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=19&ct=1705352608&rver=7.0.6738.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fcobrandid%3dab0455a0-8d03-46b9-b18b-df2f57b9e44c%26nlp%3d1%26deeplink%3dowa%252f%26RpsCsrfState%3d451c2c6d-8d13-204d-9273-6fe70ef13cf9&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=ab0455a0-8d03-46b9-b18b-df2f57b9e44c";
+                url = "https://username:password@login.live.com/login.srf?wa=wsignin1.0&rpsnv=19&ct=1705352608&rver=7.0.6738.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fcobrandid%3dab0455a0-8d03-46b9-b18b-df2f57b9e44c%26nlp%3d1%26deeplink%3dowa%252f%26RpsCsrfState%3d451c2c6d-8d13-204d-9273-6fe70ef13cf9&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=ab0455a0-8d03-46b9-b18b-df2f57b9e44c";
                 driver.Manage().Window.Maximize();
                 driver.Navigate().GoToUrl(url);
-            }
-            catch (Exception) { Console.WriteLine("--------------error in openning browser!!");  }
-        
+                string autoITScriptPath = @"ProxyAuth.exe";
+                Process.Start(autoITScriptPath);
 
-   
+            }
+            catch (Exception) { Console.WriteLine("--------------error in openning browser!!"); }
+
+
+
             try
             {
 
                 IWebElement loginInput = driver.FindElement(By.CssSelector("[name=\"loginfmt\"]"));
-                loginInput.SendKeys(extractfile(0,driver,i, filePath));          // zero means email parts[0] in the file;
+                string email = extractfile(0, i, emailFilePath, driver);
+                loginInput.SendKeys(email);                                            // zero means email parts[0] in the file;
                 loginInput.SendKeys(Keys.Enter);
                 Thread.Sleep(2000);
 
                 IWebElement passInput = driver.FindElement(By.CssSelector("[name=\"passwd\"]"));
-                passInput.SendKeys(extractfile(1,driver,i, filePath));          //one means paasword parts[1] in the file ;
+                passInput.SendKeys(extractfile(1, i, emailFilePath, driver));          //one means paasword parts[1] in the file ;
                 passInput.SendKeys(Keys.Enter);
                 Thread.Sleep(2000);
             }
-            catch (Exception) { Console.WriteLine("--------------error in login into email"); }
+            catch (Exception) { Console.WriteLine($"--------------error in login into email "); }
 
             try
             {
@@ -98,43 +122,34 @@ internal class Program
                 }
 
             }
-            catch (Exception) { Console.WriteLine("--------------error in access to inbox "); driver.Quit(); }
-
-
-
-            try
-            {
-                string urlspam = "https://outlook.live.com/mail/0/junkemail";
-                driver.Navigate().GoToUrl(urlspam);
-
-                // Create a local copy of the index to capture in the lambda expression
-                
-            }
             catch (Exception)
             {
-                Console.WriteLine("--------------error in access to spam "); driver.Quit();
-
+                Console.WriteLine("--------------error in access to inbox "); driver.Quit();
             }
+
+
+
+          
 
             int index = i;
 
 
             // Start a new task for each browser
-           Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
+            Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
            tasks.Add(task);
 
         }
 
 
-            // Wait for all tasks to complete or until cancellation
-            await Task.WhenAny(Task.WhenAll(tasks), Task.Delay(TimeSpan.FromMinutes(10))); // Adjust the timeout as needed
+        // Wait for all tasks to complete or until cancellation
+        await Task.WhenAny(Task.WhenAll(tasks), Task.Delay(TimeSpan.FromMinutes(10))); // Adjust the timeout as needed
 
-      
 
-            // Wait for all tasks to complete
-            await Task.WhenAll(tasks);
-            Task.WaitAll(tasks.ToArray());
-    
+
+        // Wait for all tasks to complete
+        await Task.WhenAll(tasks);
+        Task.WaitAll(tasks.ToArray());
+
 
 
 
@@ -149,8 +164,7 @@ internal class Program
             {
                 do
                 {
-                    string urlspam = "https://outlook.live.com/mail/0/junkemail";
-                    driver.Navigate().GoToUrl(urlspam);
+                   
 
                     Thread.Sleep(5000);
 
@@ -161,43 +175,59 @@ internal class Program
                     Thread.Sleep(5000);
 
 
-                    IWebElement moveToButton = driver.FindElement(By.Id("540"));
+
+
+                    IWebElement moveToButton = driver.FindElement(By.Id("505"));
                     moveToButton.Click();
                     Thread.Sleep(5000);
 
-                    IWebElement inboxButton = driver.FindElement(By.Name("Inbox"));
-                    inboxButton.Click();
-                    Thread.Sleep(5000);
-                    IWebElement confirmButton = driver.FindElement(By.Id("ok-1"));
-                    confirmButton.Click();
-
-
-
-                    Thread.Sleep(5000);
-
+                   
                     Console.WriteLine($"=======================Task {index}: Loop iteration");
-               
+
 
                 } while (true);
             }
             catch (Exception)
-           {
+            {
                 // Task was canceled, clean up if needed
-               Console.WriteLine($"-------------Task {index}: Task was canceled.");driver.Quit();
+                Console.WriteLine($"-------------Task {index}: Task was canceled."); driver.Quit();
             }
-         
+
+        }
+
+        void CreateFileIfNotExists(string filePath)
+        {
+            try
+            {
+                // Check if the file already exists
+                if (File.Exists(filePath))
+                {
+                    Console.WriteLine($"File '{Path.GetFileName(filePath)}' already exists in the following path:");
+                    Console.WriteLine(filePath);
+                }
+                else
+                {
+                    // Create the file if it doesn't exist
+                    using (File.Create(filePath)) { }
+
+                    Console.WriteLine($"File '{Path.GetFileName(filePath)}' created successfully in the following path:");
+                    Console.WriteLine(filePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+            }
         }
 
 
 
-
-
-        string extractfile(int zeroOrOne, IWebDriver driver, int index,string filePath)
+        string extractfile(int zeroOrOne, int index, string filePath, IWebDriver driver = null)
         {
-           
 
-            
-            string email = null;
+
+
+            string result = null;
             try
             {
                 // Read all lines from the file
@@ -210,28 +240,28 @@ internal class Program
                     string[] parts = lines[index].Split(':');
 
                     // Check if there are two parts
-                    if (parts.Length == 2)
+                    if (parts.Length > 1)
                     {
 
                         // Extract the first part (text1)
-                        email = parts[zeroOrOne];
+                        result = parts[zeroOrOne];
 
                     }
                     else
                     {
-                        Console.WriteLine("--------------Invalid format in the file. Each line should be in the format 'text1:text2'."); driver.Quit();
+                        Console.WriteLine("--------------Invalid format in the file. Each line should be in the format 'text1:text2'."); if (driver != null) driver.Quit();
                     }
                 }
                 else
                 {
-                    Console.WriteLine("--------------The file is empty."); driver.Quit();
+                    Console.WriteLine($"--------------The file is empty  {filePath}"); if (driver != null) driver.Quit(); ;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("--------------An error occurred: " + ex.Message); driver.Quit();
+                Console.WriteLine("--------------An error occurred: " + ex.Message); if (driver != null) driver.Quit(); ;
             }
-            return email;
+            return result;
         }
     }
 }
