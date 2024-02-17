@@ -1,289 +1,175 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using System.Net;
-using System.Text;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using OpenQA.Selenium.Interactions;
-
-
+using System.IO;
+using System.Threading.Tasks;
 
 internal class Program
 {
     private static async Task Main(string[] args)
     {
-        // Create a list to store tasks 
-        List<Task> tasks = new List<Task>();
-
-
-
-
-        // Get the current directory
         string currentDirectory = Directory.GetCurrentDirectory();
-
-        // Proxy file
         string proxiesFilePath = Path.Combine(currentDirectory, "proxies.txt");
-        CreateFileIfNotExists(proxiesFilePath);
-
-        // Emails file
         string emailFilePath = Path.Combine(currentDirectory, "emails.txt");
-        CreateFileIfNotExists(emailFilePath);
 
+        EnsureFileExists(proxiesFilePath);
+        EnsureFileExists(emailFilePath);
 
-        Console.WriteLine("Enter Number of Users :");
-        int numberOfUsers = int.Parse(Console.ReadLine());
+        Console.WriteLine("Enter Number of Users:");
+        if (!int.TryParse(Console.ReadLine(), out int numberOfUsers))
+        {
+            Console.WriteLine("Invalid input. Please enter a valid number.");
+            return;
+        }
 
-
-
-
+        List<Task> browserTasks = new List<Task>();
 
         for (int i = 0; i < numberOfUsers; i++)
         {
-            ChromeOptions options = new ChromeOptions();
-            Proxy proxy = new Proxy();
+            browserTasks.Add(OpenBrowserAndProcessEmails(i, proxiesFilePath, emailFilePath));
+        }
 
+        await Task.WhenAll(browserTasks);
+    }
 
+    private static async Task OpenBrowserAndProcessEmails(int userIndex, string proxiesFilePath, string emailFilePath)
+    {
+        ChromeOptions options = new ChromeOptions();
+        ConfigureProxy(options, proxiesFilePath);
+
+        using (var driver = new ChromeDriver(options))
+        {
             try
             {
-                string proxyIp = extractfile(0, 0, proxiesFilePath);
-                int proxyPort = int.Parse(extractfile(1, 0, proxiesFilePath));
-                string ipAndPort = $"{proxyIp}:{proxyPort}";
-                proxy.HttpProxy = ipAndPort;
-                proxy.SslProxy = ipAndPort;
+                await SignInToEmail(driver, emailFilePath, userIndex);
+                await ProcessSpamFolder(driver);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error processing user {userIndex}: {ex.Message}");
+            }
+        }
+    }
 
-
+    private static void ConfigureProxy(ChromeOptions options, string filePath)
+    {
+        try
+        {
+            var proxyDetails = File.ReadAllLines(filePath)[0].Split(':');
+            if (proxyDetails.Length >= 2)
+            {
+                var proxy = new Proxy
+                {
+                    HttpProxy = $"{proxyDetails[0]}:{proxyDetails[1]}",
+                    SslProxy = $"{proxyDetails[0]}:{proxyDetails[1]}"
+                };
                 options.Proxy = proxy;
-
-            }
-            catch
-            {
-                Console.WriteLine("--------------error in Proxies  (browser without proxy) !!");
-            }
-
-
-
-
-            IWebDriver driver = new ChromeDriver(options);
-
-
-
-
-
-
-            // Set implicit wait
-            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
-
-
-
-
-            try
-            {
-                string url;
-                url = "https://username:password@login.live.com/login.srf?wa=wsignin1.0&rpsnv=19&ct=1705352608&rver=7.0.6738.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fcobrandid%3dab0455a0-8d03-46b9-b18b-df2f57b9e44c%26nlp%3d1%26deeplink%3dowa%252f%26RpsCsrfState%3d451c2c6d-8d13-204d-9273-6fe70ef13cf9&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=ab0455a0-8d03-46b9-b18b-df2f57b9e44c";
-                driver.Manage().Window.Maximize();
-                driver.Navigate().GoToUrl(url);
-                string autoITScriptPath = @"ProxyAuth.exe";
-                Process.Start(autoITScriptPath);
-
-            }
-            catch (Exception) { Console.WriteLine("--------------error in openning browser!!"); }
-
-
-
-            try
-            {
-
-                IWebElement loginInput = driver.FindElement(By.CssSelector("[name=\"loginfmt\"]"));
-                string email = extractfile(0, i, emailFilePath, driver);
-                loginInput.SendKeys(email);                                            // zero means email parts[0] in the file;
-                loginInput.SendKeys(Keys.Enter);
-                Thread.Sleep(2000);
-
-                IWebElement passInput = driver.FindElement(By.CssSelector("[name=\"passwd\"]"));
-                passInput.SendKeys(extractfile(1, i, emailFilePath, driver));          //one means paasword parts[1] in the file ;
-                passInput.SendKeys(Keys.Enter);
-                Thread.Sleep(2000);
-            }
-            catch (Exception) { Console.WriteLine("--------------error in login into email"); }
-
-            try
-            {
-                try
-                {
-                    IWebElement loginForm1 = driver.FindElement(By.Name("kmsiForm"));
-                    loginForm1.Submit();
-                }
-                catch (NoSuchElementException)
-                {
-                    // Handle the case where the first element is not found
-                    IWebElement loginForm2 = driver.FindElement(By.Id("idSIButton9"));
-                    loginForm2.Submit();
-                }
-
-            }
-            catch (Exception) { Console.WriteLine("--------------error in access to inbox "); driver.Quit();
-            }
-
-
-
-            try
-            {
-                Thread.Sleep(5000);
-
-                string urlspam = "https://outlook.live.com/mail/0/junkemail";
-                driver.Navigate().GoToUrl(urlspam);
-
-            }
-            catch (Exception)
-            {
-                Console.WriteLine("--------------error in access to spam "); driver.Quit();
-
-            }
-
-            int index = i;
-
-
-            // Start a new task for each browser
-            Task task = Task.Run(() => ExecuteInfiniteLoop(driver, index));
-            tasks.Add(task);
-
-        }
-
-
-        // Wait for all tasks to complete or until cancellation
-        await Task.WhenAny(Task.WhenAll(tasks), Task.Delay(TimeSpan.FromMinutes(10))); // Adjust the timeout as needed
-
-
-
-        // Wait for all tasks to complete
-        await Task.WhenAll(tasks);
-        Task.WaitAll(tasks.ToArray());
-
-        Console.ReadKey();
-    }
-
-
-
-
-
-    public static void ExecuteInfiniteLoop(IWebDriver driver, int index)
-    {
-
-        try
-        {
-            do
-            {
-                string urlspam = "https://outlook.live.com/mail/0/junkemail";
-                driver.Navigate().GoToUrl(urlspam);
-
-                Thread.Sleep(5000);
-
-
-                IWebElement firstSpam = driver.FindElement(By.Id("MainModule"));
-                firstSpam = firstSpam.FindElement(By.ClassName("S2NDX"));
-                firstSpam.Click();
-                Thread.Sleep(5000);
-
-
-                IWebElement moveToButton = driver.FindElement(By.Id("540"));
-                moveToButton.Click();
-                Thread.Sleep(5000);
-
-                IWebElement inboxButton = driver.FindElement(By.Name("Inbox"));
-                inboxButton.Click();
-                Thread.Sleep(5000);
-                IWebElement confirmButton = driver.FindElement(By.Id("ok-1"));
-                confirmButton.Click();
-
-
-
-                Thread.Sleep(5000);
-
-                Console.WriteLine($"=======================Task {index}: Loop iteration");
-
-
-            } while (true);
-        }
-        catch (Exception)
-        {
-            // Task was canceled, clean up if needed
-            Console.WriteLine($"-------------Task {index}: Task was canceled."); driver.Quit();
-        }
-
-    }
-
-
-
-    public static void CreateFileIfNotExists(string filePath)
-    {
-        try
-        {
-            // Check if the file already exists
-            if (File.Exists(filePath))
-            {
-                Console.WriteLine($"File '{Path.GetFileName(filePath)}' already exists in the following path:");
-                Console.WriteLine(filePath);
-            }
-            else
-            {
-                // Create the file if it doesn't exist
-                using (File.Create(filePath)) { }
-
-                Console.WriteLine($"File '{Path.GetFileName(filePath)}' created successfully in the following path:");
-                Console.WriteLine(filePath);
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"An error occurred: {ex.Message}");
+            Console.WriteLine("Error configuring proxy: " + ex.Message);
+        }
+    }
+
+    private static async Task SignInToEmail(IWebDriver driver, string filePath, int userIndex)
+    {
+        string[] credentials = File.ReadAllLines(filePath);
+        if (userIndex >= credentials.Length)
+        {
+            throw new IndexOutOfRangeException("User index is out of bounds of the credentials file.");
+        }
+
+        var userCredentials = credentials[userIndex].Split(':');
+        if (userCredentials.Length < 2)
+        {
+            throw new FormatException("Credentials file is not in the correct format.");
+        }
+
+        string email = userCredentials[0];
+        string password = userCredentials[1];
+
+        driver.Manage().Window.Maximize();
+        driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);
+        driver.Navigate().GoToUrl("https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=19&ct=1705352608&rver=7.0.6738.0&wp=MBI_SSL&wreply=https%3a%2f%2foutlook.live.com%2fowa%2f%3fcobrandid%3dab0455a0-8d03-46b9-b18b-df2f57b9e44c%26nlp%3d1%26deeplink%3dowa%252f%26RpsCsrfState%3d451c2c6d-8d13-204d-9273-6fe70ef13cf9&id=292841&aadredir=1&CBCXT=out&lw=1&fl=dob%2cflname%2cwld&cobrandid=ab0455a0-8d03-46b9-b18b-df2f57b9e44c");
+        string autoITScriptPath = @"ProxyAuth.exe";
+        Process.Start(autoITScriptPath);
+        IWebElement emailField = driver.FindElement(By.Name("loginfmt"));
+        emailField.SendKeys(email);
+        emailField.SendKeys(Keys.Enter);
+
+        // Wait for the password field to be present
+        await Task.Delay(2000); // Simulating asynchronous behavior with a delay
+
+        IWebElement passwordField = driver.FindElement(By.Name("passwd"));
+        passwordField.SendKeys(password);
+        passwordField.SendKeys(Keys.Enter);
+
+        await Task.Delay(2000); // Wait for login to process
+
+        // Handle additional prompts if present (e.g., stay signed in? prompt)
+        try
+        {
+            IWebElement staySignedInButton = driver.FindElement(By.Id("acceptButton"));
+            staySignedInButton.Click();
+        }
+        catch (NoSuchElementException)
+        {
+            // No action needed if the element does not exist
+        }
+    }
+
+    private static async Task ProcessSpamFolder(IWebDriver driver)
+    {
+        // Navigate to the spam/junk email folder
+        driver.Navigate().GoToUrl("https://outlook.live.com/mail/junkemail");
+
+        await Task.Delay(5000); // Wait for the page to load
+
+        try
+        {
+            while (true) // Adjust this condition based on how you want to break out of processing spam
+            {
+                // Here, you would add logic to select and move emails as needed
+                // This is an example based on the initial structure you provided
+                // The specific elements and actions might need to be updated based on the actual page structure
+
+                // Example: Find and click the first spam email
+                // This is highly dependent on the page structure and might need adjustment
+                IWebElement firstSpamEmail = driver.FindElement(By.CssSelector("div[class*='someClassNameForEmails']"));
+                firstSpamEmail.Click();
+
+                await Task.Delay(5000); // Wait for selection to complete
+
+                // Find and click the "Not junk" or similar button to move the email to the inbox
+                IWebElement notJunkButton = driver.FindElement(By.CssSelector("button[id*='notJunkButtonId']"));
+                notJunkButton.Click();
+
+                await Task.Delay(5000); // Wait for the email to move
+
+                // Implement logic to break the loop when all desired emails are processed
+                // For example, you might check if there are no more emails to process
+            }
+        }
+        catch (NoSuchElementException ex)
+        {
+            Console.WriteLine("Could not find the specified element: " + ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("An error occurred while processing the spam folder: " + ex.Message);
         }
     }
 
 
-
-        public static string extractfile(int zeroOrOne, int index, string filePath, IWebDriver driver = null)
-        { 
-
-
-
-            string result = null;
-            try
-            {
-                // Read all lines from the file
-                string[] lines = File.ReadAllLines(filePath);
-
-                // Check if there's at least one line in the file
-                if (lines.Length > 0)
-                {
-                    // Split the line using the colon (":") separator
-                    string[] parts = lines[index].Split(':');
-
-                    // Check if there are two parts
-                    if (parts.Length >1 )
-                    {
-
-                        // Extract the first part (text1)
-                        result = parts[zeroOrOne];
-
-                    }
-                    else
-                    {
-                        Console.WriteLine("--------------Invalid format in the file. Each line should be in the format 'text1:text2'."); if (driver!= null) driver.Quit();
-                    }    
-
-
-                }
-                else
-                {
-
-
-                    Console.WriteLine($"--------------The file is empty  {filePath}"); if (driver != null) driver.Quit(); ;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("--------------An error occurred: " + ex.Message); if (driver != null) driver.Quit(); ;
-            }
-            return result;
+    private static void EnsureFileExists(string filePath)
+    {
+        if (!File.Exists(filePath))
+        {
+            File.Create(filePath).Dispose();
+            Console.WriteLine($"Created file: {filePath}");
         }
-    
+    }
 }
