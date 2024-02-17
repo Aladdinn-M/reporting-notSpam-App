@@ -268,11 +268,14 @@ internal class Program
                     else
                     {
                         Console.WriteLine("--------------Invalid format in the file. Each line should be in the format 'text1:text2'."); if (driver!= null) driver.Quit();
-                    }
+                    }    
+
 
                 }
                 else
                 {
+
+
                     Console.WriteLine($"--------------The file is empty  {filePath}"); if (driver != null) driver.Quit(); ;
                 }
             }
