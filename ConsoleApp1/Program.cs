@@ -269,6 +269,7 @@ internal class Program
                     {
                         Console.WriteLine("--------------Invalid format in the file. Each line should be in the format 'text1:text2'."); if (driver!= null) driver.Quit();
                     }
+
                 }
                 else
                 {
